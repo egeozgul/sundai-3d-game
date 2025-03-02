@@ -32,6 +32,7 @@ var orientation: Basis
 @onready var running_animation_player = $RunningModel/Animation_Running_withSkin/AnimationPlayer
 @onready var dancing_animation_player = $DancingModel/Animation_Excited_Walk_F_withSkin/AnimationPlayer
 @onready var camera_mount = $"../CameraMount"
+var audio_player
 
 func _ready():
     # Hide running and dancing models initially
@@ -50,6 +51,27 @@ func _ready():
     
     # Set initial mouse mode
     Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	
+	# Create an AudioStreamPlayer node
+	audio_player = AudioStreamPlayer.new()
+	
+	# Load and set up the footstep sound
+	var sound_file_run = "res://assets/sound/footsteps_running.wav"
+	var sound_file_walk = "res://assets/sound/footsteps_walking.wav"
+	var sound_file_track = "res://assets/sound/soundtrack.wav"
+	
+	
+	var audio_stream_run = load(sound_file_run)
+	var audio_stream_walk = load(sound_file_walk)
+	var audio_stream_track = load(sound_file_track)
+
+
+	if audio_stream_run:
+		audio_player.stream = audio_stream_run
+		add_child(audio_player)
+	else:
+		print("ERROR: Could not load audio file: ", sound_file_run)
+
 
 func _input(event):
     if event is InputEventMouseMotion:
@@ -141,16 +163,23 @@ func update_animations(input_dir: Vector2):
     if input_dir == Vector2.ZERO:
         walking_animation_player.stop()
         running_animation_player.stop()
+			if audio_player and audio_player.playing:
+		audio_player.stop()
+
     else:
         if is_running:
             walking_model.hide()
             running_model.show()
             if !running_animation_player.is_playing():
+				if audio_player and !audio_player.playing:
+						audio_player.play()
                 running_animation_player.play("Armature|running|baselayer")
         else:
             running_model.hide()
             walking_model.show()
             if !walking_animation_player.is_playing():
+				if audio_player and !audio_player.playing:
+					audio_player.play()
                 walking_animation_player.play("Armature|walking_man|baselayer")
 
 func start_dancing():
@@ -158,12 +187,16 @@ func start_dancing():
     walking_model.hide()
     running_model.hide()
     dancing_model.show()
+	if audio_player and audio_player.playing:
+		audio_player.stop()
     dancing_animation_player.play("Armature|Excited_Walk_F|baselayer")
 
 func stop_dancing():
     is_dancing = false
     dancing_model.hide()
     walking_model.show()
+	if audio_player and audio_player.playing:
+		audio_player.stop()
     dancing_animation_player.stop()
 
 func die():
